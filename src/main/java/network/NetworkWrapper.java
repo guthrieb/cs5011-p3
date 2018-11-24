@@ -46,23 +46,22 @@ public class NetworkWrapper {
         return wrapper;
     }
 
-    public void retrain() {
+    void retrain() {
         NetworkTrainer trainer = new NetworkTrainer();
         int featureSize = features.size();
         int outputSize = outputs.size();
         CSVNeuralDataSet trainingSet = new CSVNeuralDataSet(dataSetFilePath, featureSize, outputSize, true, CSVFormat.ENGLISH, false);
 
-        int avgSize = (featureSize + outputSize) / 2;
 
-        this.network = trainer.createNewNetwork(avgSize, trainingSet, 0.0001, 0.1, 0.11);
+        this.network = trainer.createNewNetwork(trainingSet, 0.5, 0.3, 0.05);
     }
 
-    public double[] getOutput(MLData input) {
+    double[] getOutput(MLData input) {
         MLData output = network.compute(input);
         return output.getData();
     }
 
-    public void addOutput(String newOutput) {
+    void addOutput(String newOutput) {
         outputs.add(newOutput);
     }
 
@@ -120,5 +119,18 @@ public class NetworkWrapper {
     public void addEntry(List<String> inputStrings) throws IOException {
         DataSetEditor dataSetEditor = new DataSetEditor();
         dataSetEditor.addEntry(inputStrings, dataSetFilePath);
+    }
+
+    public void addNewOutput(String newColumn) throws IOException {
+        DataSetEditor editor = new DataSetEditor();
+        editor.addColumn(features.size() + outputs.size(), newColumn, 0.0, dataSetFilePath);
+        addOutput(newColumn);
+    }
+
+    public void addNewFeature(List<Boolean> matchingNewFeature, String newFeature) throws IOException {
+        DataSetEditor editor = new DataSetEditor();
+        editor.addColumn(features.size(), newFeature, 0.0, dataSetFilePath);
+        editor.initialiseValues(features.size(),features.size()+1, matchingNewFeature, dataSetFilePath);
+        features.add(newFeature);
     }
 }

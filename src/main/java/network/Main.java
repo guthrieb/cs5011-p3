@@ -15,7 +15,7 @@ public class Main {
     public static void main(String[] args) {
         boolean cycle = true;
         try {
-            Asker asker = new Asker(defaultHeaders, new NetworkQueryHandler("trip_edit.csv", defaultHeaders, defaultOutputs));
+            Asker asker = new Asker(defaultHeaders, defaultOutputs, new NetworkQueryHandler("trip_edit2.csv", defaultHeaders, defaultOutputs));
 
             asker.cycle();
 

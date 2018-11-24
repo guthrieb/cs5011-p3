@@ -4,10 +4,12 @@ import network.NetworkQueryHandler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class Asker {
+    private List<String> outputs;
     private List<String> features;
     private List<String> toAsk;
     private List<String> recentlyAsked = new ArrayList<>();
@@ -15,7 +17,8 @@ public class Asker {
 
     private NetworkQueryHandler network;
 
-    public Asker(List<String> features, NetworkQueryHandler wrapper) throws InvalidFeaturesException {
+    public Asker(List<String> features, List<String> outputs, NetworkQueryHandler wrapper) throws InvalidFeaturesException {
+        this.outputs = outputs;
         if (features.size() == 0) {
             throw new InvalidFeaturesException("Cannot handle 0 features");
         }
@@ -31,39 +34,68 @@ public class Asker {
 
 
     public void cycle() throws IOException {
-        List<Boolean> featuresMatch = new ArrayList<>();
+        List<Boolean> inputFeatures = new ArrayList<>();
 
 
         while(!askedAllQuestions()) {
             String question = getQuestion();
             boolean featureTrue = askQuestion(question);
 
-            featuresMatch.add(featureTrue);
-            System.out.println("Best guess: " + network.getOutputString(featuresMatch) );
+            inputFeatures.add(featureTrue);
+            System.out.println("Best guess: " + network.getOutputString(inputFeatures) );
         }
 
-        String outputString = network.getOutputString(featuresMatch);
+        String outputString = network.getOutputString(inputFeatures);
 
         if(correctGuess(outputString)) {
             System.out.println("Correct guess");
         } else {
             System.out.println("Incorrect guess, adjusting training table");
-            String actualOuptut = getActualLocation();
-            adjustTrainingTable(featuresMatch, actualOuptut);
+            String[] locationAndFeature = getActualLocationAndNewFeature();
+
+            System.out.println("Adding Location and Feature: " + Arrays.toString(locationAndFeature));
+
+            List<Boolean> locationsExhibitingFeature = mapLocationsToNewFeatures(locationAndFeature[1]);
+            adjustTrainingTable(inputFeatures, locationsExhibitingFeature, locationAndFeature[1], locationAndFeature[0]);
         }
 
 
     }
 
-    private String getActualLocation() {
-        System.out.println("Where is your actual dream location?");
+    private List<Boolean> mapLocationsToNewFeatures(String feature) {
         Scanner in = new Scanner(System.in);
 
-        return in.next();
+        List<Boolean> featureExhibitsTrait = new ArrayList<>();
+        for (String output : outputs) {
+            System.out.println("Would you say the location " + output + " is known for the feature " + feature + "? [y/n]");
+
+            if (in.next().equals("y")) {
+                featureExhibitsTrait.add(true);
+            } else {
+                featureExhibitsTrait.add(false);
+            }
+        }
+
+
+        return featureExhibitsTrait;
     }
 
-    private void adjustTrainingTable(List<Boolean> featuresMatch, String outputString) throws IOException {
-        network.addNewRelation(featuresMatch, outputString);
+    private String[] getActualLocationAndNewFeature() {
+        System.out.println("Where is your actual dream location?");
+        Scanner in = new Scanner(System.in);
+        String actualLocation = in.next();
+
+        System.out.println("Name a feature that would distinguish this from other locations?");
+        String distinguishingFeature = in.next();
+
+        return new String[]{actualLocation, distinguishingFeature};
+    }
+
+    private void adjustTrainingTable(List<Boolean> inputFeature, List<Boolean> matchingNewFeature, String newFeature, String outputString) throws IOException {
+        network.addNewFeature(matchingNewFeature, newFeature);
+        network.addNewOutput(outputString);
+        inputFeature.add(true);
+        network.addNewRelation(inputFeature, outputString);
     }
 
     private boolean correctGuess(String outputString) {

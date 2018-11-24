@@ -47,6 +47,13 @@ public class NetworkQueryHandler implements NetworkQueryHandlerI {
         train();
     }
 
+    /**
+     * Adds
+     *
+     * @param inputs
+     * @param output
+     * @throws IOException
+     */
     private void addToTrainingTable(List<Boolean> inputs, String output) throws IOException {
 
         List<String> entry = new ArrayList<>();
@@ -62,7 +69,6 @@ public class NetworkQueryHandler implements NetworkQueryHandlerI {
                     entry.add("0.0");
                 }
             }
-
         } else {
 //            addNewColumn(inputs, output);
         }
@@ -99,5 +105,14 @@ public class NetworkQueryHandler implements NetworkQueryHandlerI {
 
     public void train() {
         wrapper.retrain();
+    }
+
+
+    public void addNewFeature(List<Boolean> matchingNewFeature, String newFeature) throws IOException {
+        wrapper.addNewFeature(matchingNewFeature, newFeature);
+    }
+
+    public void addNewOutput(String outputString) throws IOException {
+        wrapper.addNewOutput(outputString);
     }
 }

@@ -4,6 +4,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import frontend.InvalidFeaturesException;
 
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -14,12 +15,13 @@ import java.util.List;
 
 public class DataSetEditor {
     public void addColumn(int index, String header, double defaultValue, String filePath) throws IOException {
+        System.out.println("ADDING COLUMN: " + index + " - " + header);
         try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
             List<String[]> csvBody = reader.readAll();
 
             boolean titleWritten = false;
 
-            try (CSVWriter writer = new CSVWriter(new FileWriter(filePath))) {
+            try (CSVWriter writer = new CSVWriter(new FileWriter(filePath), ',', CSVWriter.NO_QUOTE_CHARACTER)) {
                 for(String[] entries : csvBody) {
 
                     List<String> entryList = new ArrayList<>(Arrays.asList(entries));
@@ -85,5 +87,36 @@ public class DataSetEditor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void initialiseValues(int featureIndex, int outputBeginningIndex, List<Boolean> outputsMatchingNewFeature, String filePath) throws IOException {
+        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
+            List<String[]> csvBody = reader.readAll();
+
+            try(CSVWriter writer = new CSVWriter(new FileWriter(filePath), ',', CSVWriter.NO_QUOTE_CHARACTER)) {
+                for(String[] entry : csvBody) {
+                    writer.writeNext(addFeatureToEntry(featureIndex, outputBeginningIndex, outputsMatchingNewFeature, entry));
+                }
+            }
+        }
+    }
+
+    private String[] addFeatureToEntry(int featureIndex, int outputBeginningIndex, List<Boolean> outputsMatchingNewFeature, String[] entry) {
+
+        for(int i = outputBeginningIndex; i < entry.length; i++) {
+            //Determinined output index
+            if(entry[i].equals("1.0")) {
+                int outputIndex = i - outputBeginningIndex;
+
+                if(outputsMatchingNewFeature.get(outputIndex)) {
+                    entry[featureIndex] = "1.0";
+                } else {
+                    entry[featureIndex] = "0.0";
+                    break;
+                }
+            }
+        }
+
+        return entry;
     }
 }
