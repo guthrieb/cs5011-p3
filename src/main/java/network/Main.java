@@ -1,17 +1,26 @@
 package network;
 
+import frontend.Asker;
+import frontend.InvalidFeaturesException;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Main {
-    public static void main(String[] args) {
-        NetworkWrapper wrapper = new NetworkWrapper("trip.csv", Arrays.asList("i0", "i1", "i2", "i3", "i4", "i5", "i6", "i7"), Arrays.asList("o0", "o1", "o2", "o3", "o4"));
-        wrapper.retrain();
-        try {
-            wrapper.saveNetworkToFile("basic_save");
-            NetworkWrapper.loadNetworkFromFile("basic_save");
+    private static List<String> defaultHeaders = new ArrayList<>(Arrays.asList("Short Stay","Penguins","Longest rivers","Island","Seaside","Historical","Speaking Spanish","Food"));
+    private static List<String> defaultOutputs = new ArrayList<>(Arrays.asList("Spain", "Greece", "Argentina", "Egypt", "Australia"));
 
-        } catch (IOException | InvalidNetworkFile e) {
+    public static void main(String[] args) {
+        boolean cycle = true;
+        try {
+            Asker asker = new Asker(defaultHeaders, new NetworkQueryHandler("trip_edit.csv", defaultHeaders, defaultOutputs));
+
+            asker.cycle();
+
+
+        } catch (InvalidFeaturesException | IOException e) {
             e.printStackTrace();
         }
     }

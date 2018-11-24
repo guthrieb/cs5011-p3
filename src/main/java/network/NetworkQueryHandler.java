@@ -1,14 +1,17 @@
 package network;
 
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.basic.BasicMLData;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class NetworkQueryHandler implements NetworkQuerierI {
+public class NetworkQueryHandler implements NetworkQueryHandlerI {
     private NetworkWrapper wrapper;
     private List<String> features;
     private List<String> outputStrings;
@@ -21,21 +24,19 @@ public class NetworkQueryHandler implements NetworkQuerierI {
 
 
     public String getOutputString(List<Boolean> inputs) {
+
         double[] convertedInputs = convertInputs(inputs);
+        System.out.println(Arrays.toString(convertedInputs));
 
         MLData input = new BasicMLData(convertedInputs);
 
-        wrapper.getOutput(input);
         double[] output = wrapper.getOutput(input);
 
         return convertToString(output);
     }
 
+
     @Override
-    public void addNewOutput(String newOutput) {
-
-    }
-
     public void addNewRelation(List<Boolean> inputs, String newOutput) throws IOException {
         if (!outputStrings.contains(newOutput)) {
             outputStrings.add(newOutput);
@@ -43,18 +44,29 @@ public class NetworkQueryHandler implements NetworkQuerierI {
         }
 
         addToTrainingTable(inputs, newOutput);
-        //TODO add to training data file
-        //TODO retrain network
+        train();
     }
 
     private void addToTrainingTable(List<Boolean> inputs, String output) throws IOException {
-        String trainingFile = wrapper.getTrainingFile();
 
-        try (CSVReader reader = new CSVReader(new FileReader(trainingFile))) {
-            for (String[] nextRecord : reader) {
-
+        List<String> entry = new ArrayList<>();
+        if(outputStrings.contains(output)) {
+            for(Boolean bool : inputs) {
+                entry.add(bool ? "1.0" : "0.0");
             }
+
+            for(String outputString : outputStrings) {
+                if(outputString.equals(output)) {
+                    entry.add("1.0");
+                } else {
+                    entry.add("0.0");
+                }
+            }
+
+        } else {
+//            addNewColumn(inputs, output);
         }
+        wrapper.addEntry(entry);
     }
 
     private String convertToString(double[] outputData) {
@@ -83,5 +95,9 @@ public class NetworkQueryHandler implements NetworkQuerierI {
         }
 
         return convertedInputs;
+    }
+
+    public void train() {
+        wrapper.retrain();
     }
 }

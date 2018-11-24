@@ -1,5 +1,6 @@
 package network;
 
+import com.opencsv.CSVWriter;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.specific.CSVNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
@@ -8,6 +9,7 @@ import org.encog.util.csv.CSVFormat;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -51,10 +53,8 @@ public class NetworkWrapper {
         CSVNeuralDataSet trainingSet = new CSVNeuralDataSet(dataSetFilePath, featureSize, outputSize, true, CSVFormat.ENGLISH, false);
 
         int avgSize = (featureSize + outputSize) / 2;
-        System.out.println(featureSize);
-        System.out.println(outputSize);
 
-        this.network = trainer.createNewNetwork(avgSize, trainingSet, 0.01, 0.1, 0.2);
+        this.network = trainer.createNewNetwork(avgSize, trainingSet, 0.0001, 0.1, 0.11);
     }
 
     public double[] getOutput(MLData input) {
@@ -115,5 +115,10 @@ public class NetworkWrapper {
 
     public String getTrainingFile() {
         return dataSetFilePath;
+    }
+
+    public void addEntry(List<String> inputStrings) throws IOException {
+        DataSetEditor dataSetEditor = new DataSetEditor();
+        dataSetEditor.addEntry(inputStrings, dataSetFilePath);
     }
 }
