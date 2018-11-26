@@ -1,17 +1,12 @@
 package network;
 
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.basic.BasicMLData;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
-public class NetworkQueryHandler implements NetworkQueryHandlerI {
+public class NetworkQueryHandler {
     private NetworkWrapper wrapper;
     private List<String> features;
     private List<String> outputStrings;
@@ -22,21 +17,28 @@ public class NetworkQueryHandler implements NetworkQueryHandlerI {
         this.outputStrings = outputStrings;
     }
 
+    public static NetworkQueryHandler load(String saveLocation) throws IOException, InvalidNetworkFile {
+        NetworkWrapper wrapper = NetworkWrapper.loadNetworkFromFile(saveLocation);
+        List<String> features = wrapper.getFeatures();
+        List<String> outputs = wrapper.getOutputs();
 
-    public String getOutputString(List<Boolean> inputs) {
+        return new NetworkQueryHandler(wrapper.getTrainingFile(), features, outputs);
+    }
+
+
+    public String getOutputString(List<Boolean> inputs, List<String> excludedOutputs, double probabilityLimit) throws ExhaustedAllOutputsException {
 
         double[] convertedInputs = convertInputs(inputs);
-        System.out.println(Arrays.toString(convertedInputs));
 
         MLData input = new BasicMLData(convertedInputs);
 
         double[] output = wrapper.getOutput(input);
 
-        return convertToString(output);
+
+        return convertToString(output, excludedOutputs, probabilityLimit);
     }
 
 
-    @Override
     public void addNewRelation(List<Boolean> inputs, String newOutput) throws IOException {
         if (!outputStrings.contains(newOutput)) {
             outputStrings.add(newOutput);
@@ -47,46 +49,49 @@ public class NetworkQueryHandler implements NetworkQueryHandlerI {
         train();
     }
 
-    /**
-     * Adds
-     *
-     * @param inputs
-     * @param output
-     * @throws IOException
-     */
     private void addToTrainingTable(List<Boolean> inputs, String output) throws IOException {
 
         List<String> entry = new ArrayList<>();
-        if(outputStrings.contains(output)) {
-            for(Boolean bool : inputs) {
+        if (outputStrings.contains(output)) {
+            for (Boolean bool : inputs) {
                 entry.add(bool ? "1.0" : "0.0");
             }
 
-            for(String outputString : outputStrings) {
-                if(outputString.equals(output)) {
+            for (String outputString : outputStrings) {
+                if (outputString.equals(output)) {
                     entry.add("1.0");
                 } else {
                     entry.add("0.0");
                 }
             }
-        } else {
-//            addNewColumn(inputs, output);
         }
         wrapper.addEntry(entry);
     }
 
-    private String convertToString(double[] outputData) {
-        double maxVal = Double.NEGATIVE_INFINITY;
-        int maxValIndex = -1;
-
+    private String convertToString(double[] outputData, List<String> excludedOutputs, double probabilityLimit) throws ExhaustedAllOutputsException {
+        //Map match output probability to the index of an output string as specified for the system
+        TreeMap<Double, Integer> valueIndexOrdered = new TreeMap<>();
         for (int i = 0; i < outputData.length; i++) {
-            if (outputData[i] > maxVal) {
-                maxVal = outputData[i];
-                maxValIndex = i;
-            }
+            valueIndexOrdered.put(outputData[i], i);
         }
 
-        return outputStrings.get(maxValIndex);
+
+        NavigableMap<Double, Integer> doubleIntegerNavigableMap = valueIndexOrdered.descendingMap();
+
+        for (Map.Entry<Double, Integer> entry : doubleIntegerNavigableMap.entrySet()) {
+            if (entry.getKey() < probabilityLimit) {
+                return null;
+            } else {
+                String potentialVal = outputStrings.get(entry.getValue());
+
+                if (!excludedOutputs.contains(potentialVal)) {
+                    return potentialVal;
+                }
+            }
+
+        }
+
+        throw new ExhaustedAllOutputsException("All outputs exhausted");
     }
 
     private double[] convertInputs(List<Boolean> inputs) {
@@ -115,4 +120,18 @@ public class NetworkQueryHandler implements NetworkQueryHandlerI {
     public void addNewOutput(String outputString) throws IOException {
         wrapper.addNewOutput(outputString);
     }
+
+    public void save(String s) throws IOException {
+        wrapper.saveNetworkToFile(s);
+    }
+
+    public List<String> getFeatures() {
+        return features;
+    }
+
+    public List<String> getOutputs() {
+        return outputStrings;
+    }
+
+
 }

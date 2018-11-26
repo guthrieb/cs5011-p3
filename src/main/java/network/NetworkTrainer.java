@@ -5,33 +5,24 @@ import org.encog.ml.data.MLDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
+import org.encog.neural.networks.training.strategy.SmartLearningRate;
+import org.encog.neural.networks.training.strategy.SmartMomentum;
 
 public class NetworkTrainer {
-    private int bias = 1;
+    private static final int BIAS_UNIT = 1;
 
-    public BasicNetwork createNewNetwork(MLDataSet dataSet, double learningRate, double momentum, double maximumError) {
-
-
+    BasicNetwork createNewNetwork(MLDataSet dataSet, double learningRate, double momentum, double maximumError) {
         int inputSize = dataSet.getInputSize();
         int idealSize = dataSet.getIdealSize();
 
-        System.out.println(inputSize);
-        System.out.println(idealSize);
-
         int hiddenUnits = Math.toIntExact(Math.round(((double) inputSize + (double) idealSize) * 2.0 / 3.0));
-
-//        int hiddenUnits = 10;
 
         BasicNetwork network = null;
         boolean cycle = true;
         while(cycle) {
-            System.out.println("Hidden Units: " + hiddenUnits);
             network = constructNetworkLayers(hiddenUnits, inputSize, idealSize);
-            double error = backPropagateTraining(dataSet, learningRate, momentum, maximumError, network);
+            double error = smartBackPropagateTraining(dataSet, learningRate, momentum, maximumError, network);
 
-
-            System.out.println("ERROR: " + error);
-            System.out.println("MAX ERROR: " + maximumError);
             if(error < maximumError) {
                 cycle = false;
             } else {
@@ -43,10 +34,22 @@ public class NetworkTrainer {
         return network;
     }
 
-    private BasicNetwork constructNetworkLayers(int hiddenUnits, int inputSize, int idealSize) {
+    BasicNetwork createNewNetwork(MLDataSet dataSet, int hiddenUnits, double learningRate, double momentum, double maximumError) {
+        int inputSize = dataSet.getInputSize();
+        int idealSize = dataSet.getIdealSize();
+
+        BasicNetwork network;
+        network = constructNetworkLayers(hiddenUnits, inputSize, idealSize);
+        smartBackPropagateTraining(dataSet, learningRate, momentum, maximumError, network);
+
+
+        return network;
+    }
+
+    BasicNetwork constructNetworkLayers(int hiddenUnits, int inputSize, int idealSize) {
         BasicNetwork network = new BasicNetwork();
         BasicLayer inputLayer = new BasicLayer(null, true, inputSize);
-        BasicLayer hiddenLayer = new BasicLayer(new ActivationSigmoid(), true, hiddenUnits + bias);
+        BasicLayer hiddenLayer = new BasicLayer(new ActivationSigmoid(), true, hiddenUnits + BIAS_UNIT);
         BasicLayer outputLayer = new BasicLayer(new ActivationSigmoid(), false, idealSize);
 
         network.addLayer(inputLayer);
@@ -57,8 +60,10 @@ public class NetworkTrainer {
         return network;
     }
 
-    private double backPropagateTraining(MLDataSet dataSet, double learningRate, double momentum, double maximumError, BasicNetwork network) {
+    private double smartBackPropagateTraining(MLDataSet dataSet, double learningRate, double momentum, double maximumError, BasicNetwork network) {
         final Backpropagation trainer = new Backpropagation(network, dataSet, learningRate, momentum);
+        trainer.addStrategy(new SmartLearningRate());
+        trainer.addStrategy(new SmartMomentum());
 
         int epoch = 1;
 
@@ -67,8 +72,7 @@ public class NetworkTrainer {
             epoch++;
         } while (trainer.getError() > maximumError && epoch < 100000);
 
-        System.out.println("Iteration: " + epoch + ", error: " + trainer.getError());
-
         return trainer.getError();
     }
+
 }

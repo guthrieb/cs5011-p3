@@ -15,7 +15,6 @@ import java.util.List;
 
 public class DataSetEditor {
     public void addColumn(int index, String header, double defaultValue, String filePath) throws IOException {
-        System.out.println("ADDING COLUMN: " + index + " - " + header);
         try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
             List<String[]> csvBody = reader.readAll();
 
@@ -79,15 +78,6 @@ public class DataSetEditor {
         }
     }
 
-    public static void main(String[] args) {
-        DataSetEditor editor = new DataSetEditor();
-        try {
-            editor.translateColumns("trip_edit.csv");
-            editor.addEntry(Collections.singletonList("1.0"), "trip_edit.csv");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void initialiseValues(int featureIndex, int outputBeginningIndex, List<Boolean> outputsMatchingNewFeature, String filePath) throws IOException {
         try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
